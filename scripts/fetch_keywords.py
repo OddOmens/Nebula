@@ -29,13 +29,25 @@ API_BASE_URL = "https://api.searchads.apple.com/api/v4"
 
 def generate_jwt_token():
     """Generate JWT token for Apple Search Ads API authentication"""
+    import base64
+    
     client_id = os.environ.get('APPLE_SEARCH_ADS_CLIENT_ID')
     team_id = os.environ.get('APPLE_SEARCH_ADS_TEAM_ID')
     key_id = os.environ.get('APPLE_SEARCH_ADS_KEY_ID')
-    private_key_pem = os.environ.get('APPLE_SEARCH_ADS_PRIVATE_KEY')
+    private_key_env = os.environ.get('APPLE_SEARCH_ADS_PRIVATE_KEY')
     
-    if not all([client_id, team_id, key_id, private_key_pem]):
+    if not all([client_id, team_id, key_id, private_key_env]):
         raise ValueError("Missing required environment variables")
+    
+    # Try to decode if it's base64 encoded, otherwise use as-is
+    try:
+        private_key_pem = base64.b64decode(private_key_env).decode('utf-8')
+    except:
+        private_key_pem = private_key_env
+    
+    # Ensure proper formatting
+    if not private_key_pem.startswith('-----BEGIN'):
+        raise ValueError("Invalid private key format")
     
     # Current timestamp
     now = int(time.time())
@@ -218,15 +230,3 @@ def main():
     
     print()
     
-    # Save trending keywords
-    if all_keywords:
-        save_trending_keywords(all_keywords)
-    
-    # Save metadata
-    save_metadata()
-    
-    print()
-    print(f"✅ Complete! Processed {len(all_keywords)} total keywords")
-
-if __name__ == '__main__':
-    main()
