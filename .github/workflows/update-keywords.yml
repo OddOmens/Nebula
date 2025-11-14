@@ -1,0 +1,39 @@
+name: Update Keyword Data
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # Run daily at 2 AM UTC
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  update-keywords:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install requests PyJWT cryptography
+      
+      - name: Fetch keyword data
+        env:
+          APPLE_SEARCH_ADS_CLIENT_ID: ${{ secrets.APPLE_SEARCH_ADS_CLIENT_ID }}
+          APPLE_SEARCH_ADS_TEAM_ID: ${{ secrets.APPLE_SEARCH_ADS_TEAM_ID }}
+          APPLE_SEARCH_ADS_KEY_ID: ${{ secrets.APPLE_SEARCH_ADS_KEY_ID }}
+          APPLE_SEARCH_ADS_PRIVATE_KEY: ${{ secrets.APPLE_SEARCH_ADS_PRIVATE_KEY }}
+        run: |
+          python scripts/fetch_keywords.py
+      
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add .
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update keyword data $(date +'%Y-%m-%d')" && git push)
